@@ -78,6 +78,7 @@ def checkForEvent(post):
 			currentPost.post_id=post.id
 			session.add(currentPost)
 			session.commit()
+			logger.info(f"Updated {kind} to point at https://redd.it/{post.id}")
 
 
 	title = post.title.lower()
@@ -110,7 +111,8 @@ def checkPrivateMessage(message):
 		if not flair:
 			message.reply(invalidMessage)
 			message.mark_read()
-
+			logger.info(f"{post.author.name} sent a flair message that could not be parsed and was informed.")
+			return
 		max_eligibility_age = flair.created_utc + (86400*7)
 
 		for comment in message.author.comments.new(limit=None):
@@ -159,8 +161,11 @@ def checkPrivateMessage(message):
 						break
 		if not eligible:
 			for post in message.author.submissions.new(limit=None):
+				logger.debug(post.id)
 				if post.subreddit != flair.sub_requirement: continue
-				if post.removed: continue
+				try:
+					if post.removed: continue
+				except: pass
 				if post.created_utc < flair.created_utc: break
 				if flair.age_requirement:
 					minimum_eligible_time = message.created_utc - flair.age_requirement
@@ -232,7 +237,7 @@ def logic(sub):
 
 while True:
 	try:
-		r = praw.Reddit("skynet")
+		r = praw.Reddit("dppb")
 		r.validate_on_submit = True
 		sub = r.subreddit("dirtypenpals")
 		logic(sub)
